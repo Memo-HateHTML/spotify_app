@@ -1,1 +1,92 @@
 
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Spotify Top Tracks Viewer</title>
+    <style>
+      body {
+        background-color: #121212;
+        color: white;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 2rem;
+      }
+      button {
+        background-color: #1db954;
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        font-size: 1rem;
+        border-radius: 25px;
+        cursor: pointer;
+      }
+      .track {
+        margin: 1rem auto;
+        background-color: #282828;
+        padding: 1rem;
+        border-radius: 10px;
+        max-width: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>My Top Spotify Tracks</h1>
+    <button id="login-btn">Login with Spotify</button>
+    <div id="tracks"></div>
+
+    <script>
+      const CLIENT_ID = "398c5e1444d14a5eaa32b7a38591ea5f";
+      const REDIRECT_URI = window.location.origin + window.location.pathname;
+      const SCOPES = "user-top-read";
+
+      function getAccessTokenFromUrl() {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        return params.get("access_token");
+      }
+
+      function authorizeSpotify() {
+        const authUrl = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(
+          REDIRECT_URI
+        )}&scope=${encodeURIComponent(SCOPES)}`;
+        window.location.href = authUrl;
+      }
+
+      async function fetchTopTracks(token) {
+        const res = await fetch(
+          "https://api.spotify.com/v1/me/top/tracks?limit=5",
+          {
+            headers: { Authorization: "Bearer " + token },
+          }
+        );
+        const data = await res.json();
+        return data.items;
+      }
+
+      async function displayTracks(token) {
+        const tracks = await fetchTopTracks(token);
+        const container = document.getElementById("tracks");
+        container.innerHTML = "";
+        tracks.forEach((track) => {
+          const div = document.createElement("div");
+          div.className = "track";
+          div.innerHTML = `<strong>${track.name}</strong><br/>by ${track.artists
+            .map((a) => a.name)
+            .join(", ")}`;
+          container.appendChild(div);
+        });
+      }
+
+      document
+        .getElementById("login-btn")
+        .addEventListener("click", authorizeSpotify);
+
+      const token = getAccessTokenFromUrl();
+      if (token) {
+        document.getElementById("login-btn").style.display = "none";
+        displayTracks(token);
+      }
+    </script>
+  </body>
+</html>
